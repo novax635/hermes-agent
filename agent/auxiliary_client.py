@@ -2716,7 +2716,6 @@ def resolve_provider_client(
             custom_key = custom_key or "no-key-required"
             # An explicit per-task api_mode override (from _resolve_task_provider_model)
             # wins; otherwise fall back to what the provider entry declared.
-            entry_api_mode = (api_mode or custom_entry.get("api_mode") or "").strip()
             if custom_base:
                 final_model = _normalize_resolved_model(
                     model
@@ -2726,6 +2725,19 @@ def resolve_provider_client(
                     or "gpt-4o-mini",
                     provider,
                 )
+                entry_api_mode = (api_mode or custom_entry.get("api_mode") or "").strip()
+                if not entry_api_mode:
+                    try:
+                        from hermes_cli.runtime_provider import (
+                            _infer_openai_compatible_api_mode,
+                        )
+
+                        entry_api_mode = (
+                            _infer_openai_compatible_api_mode(custom_base, final_model)
+                            or ""
+                        )
+                    except Exception:
+                        entry_api_mode = ""
                 # anthropic_messages talks to the /anthropic surface directly;
                 # OpenAI-wire paths (chat_completions / codex_responses) need the
                 # /v1 equivalent.  Rewrite only on the OpenAI-wire path so the
